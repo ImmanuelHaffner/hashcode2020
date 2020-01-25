@@ -87,9 +87,7 @@ int main(int argc, const char **argv)
 
     /* Create a working copy of counters and define a function to reset them to the original state. */
     uint32_t *counters = new uint32_t[biggest_size + 1];
-    auto reset_counters = [=]() {
-        std::copy(counters_original, counters_original + biggest_size + 1, counters);
-    };
+#define RESET_COUNTERS() std::copy(counters_original, counters_original + biggest_size + 1, counters)
 
     /* Allocate and initialize dynamic programming table. */
     uint32_t *dptable = new uint32_t[max_slices + 1];
@@ -109,48 +107,18 @@ int main(int argc, const char **argv)
 
     /* Solve the dynamic programming table. */
     for (uint32_t i = 1; i <= max_slices; ++i) {
-        if (dptable[i] == 0) continue; // trivially solved
 #ifdef VERBOSE
         std::cerr << "Solve for " << i << " slices.\n";
 #endif
         for (uint32_t t = num_types; t --> 0;) {
-            reset_counters();
+            RESET_COUNTERS();
             uint32_t size_of_type = types[t];
-#ifdef VERBOSE
-            std::cerr << "  Consider type " << t << " of " << size_of_type << " slices.\n";
-#endif
-
-            if (size_of_type > i) { // pizza type is larger than required slices
-#ifdef VERBOSE
-                std::cerr << "    Type is too large, skip.\n";
-#endif
-                continue;
-            }
-
-            uint32_t count = counters[size_of_type];
-            if (count == 0) { // pizza type not available
-#ifdef VERBOSE
-                std::cerr << "    Type is not available, skip.\n";
-#endif
-                continue;
-            }
-
+            if (size_of_type > i) continue;            // pizza type is larger than required slices
+            if (counters[size_of_type] == 0) continue; // pizza type not available
             uint32_t left = size_of_type;
             uint32_t right = i - left;
-#ifdef VERBOSE
-            std::cerr << "    Split into " << left << " + " << right << ".\n";
-#endif
-            bool solvable_left = solve(dptable, counters, left);
-            bool solvable_right = solve(dptable, counters, right);
-#ifdef VERBOSE
-            std::cerr << "      Left is " << (solvable_left ? "" : "not ") << "solvable.\n";
-            std::cerr << "      Right is " << (solvable_right ? "" : "not ") << "solvable.\n";
-#endif
-            if (solvable_left and solvable_right) {
-#ifdef VERBOSE
-                std::cerr << "  Solution found: " << left << " + " << right << ".\n";
-#endif
-                /* Left AND right form a valid solution. */
+            if (solve(dptable, counters, left) and solve(dptable, counters, right)) {
+                /* Left + right form a valid solution. */
                 dptable[i] = right;
                 break;
             }
@@ -173,7 +141,7 @@ int main(int argc, const char **argv)
 #endif
 
     std::vector<uint32_t> pizzas;
-    reset_counters();
+    RESET_COUNTERS();
     while (solution) {
         uint32_t left = dptable[solution];
         uint32_t right = solution - left;
