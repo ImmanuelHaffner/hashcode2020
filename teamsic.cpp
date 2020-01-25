@@ -17,19 +17,23 @@ bool solve(uint32_t *dptable, uint32_t *counters, uint32_t num_slices)
 {
     if (num_slices == 0) return true;
 
-    uint32_t value = dptable[num_slices];
-    if (value == BOT) return false; // unsolvable
-    if (value == 0) { // trivially solvable
-        if (counters[num_slices] == 0) return false; // unsolvable, pizza type not available
-        --counters[num_slices];
-        return true;
-    }
+    while (num_slices) {
+        uint32_t value = dptable[num_slices];
+        if (value == BOT) return false; // unsolvable
+        if (value == 0) { // trivially solvable
+            if (counters[num_slices] == 0) return false; // unsolvable, pizza type not available
+            --counters[num_slices];
+            return true;
+        }
 
-    /* Determine whether the current number of slices is solvable by checking whether the left and right operands are
-     * solvable with the available pizza types. */
-    uint32_t left = value;
-    uint32_t right = num_slices - left;
-    return solve(dptable, counters, left) and solve(dptable, counters, right);
+        uint32_t left = value;
+        uint32_t right = num_slices - left; // must be the size of a pizza type
+        if (counters[right] == 0) return false;
+        --counters[right];
+
+        num_slices = left;
+    }
+    return true;
 }
 
 
