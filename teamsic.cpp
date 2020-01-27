@@ -105,8 +105,15 @@ int main(int argc, const char **argv)
     std::cerr << "]\n";
 #endif
 
+    const uint32_t milestone = max_slices / 100; // report every 1% progress
+    uint32_t next_milestone = milestone;
+
     /* Solve the dynamic programming table. */
     for (uint32_t i = 1; i <= max_slices; ++i) {
+        if (i == next_milestone) {
+            std::cerr << (next_milestone * 100.f) / max_slices << "%\n";
+            next_milestone += milestone;
+        }
 #ifdef VERBOSE
         std::cerr << "Solve for " << i << " slices.\n";
 #endif
