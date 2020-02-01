@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <err.h>
 #include <fstream>
@@ -15,25 +16,19 @@ constexpr uint32_t BOT = std::numeric_limits<uint32_t>::max();
 
 bool solve(uint32_t *dptable, uint32_t *counters, uint32_t num_slices)
 {
-    if (num_slices == 0) return true;
-
+    assert(num_slices != BOT);
     while (num_slices) {
-        uint32_t value = dptable[num_slices];
-        if (value == BOT) return false; // unsolvable
-        if (value == 0) { // trivially solvable
-            if (counters[num_slices] == 0) return false; // unsolvable, pizza type not available
-            --counters[num_slices];
-            return true;
-        }
+        const uint32_t prev = dptable[num_slices];
+        if (prev == BOT) return false; // unsolvable
 
-        uint32_t left = value;
-        uint32_t right = num_slices - left; // must be the size of a pizza type
-        if (counters[right] == 0) return false;
-        --counters[right];
+        const uint32_t a_pizza = num_slices - prev; // must be the size of a pizza type
+        assert(a_pizza != 0);
+        if (counters[a_pizza] == 0) return false; // pizza type not available anymore
+        --counters[a_pizza];
 
-        num_slices = left;
+        num_slices = prev;
     }
-    return true;
+    return true; // num_slices == 0  =>  trivially solvable
 }
 
 
@@ -93,7 +88,7 @@ int main(int argc, const char **argv)
     uint32_t *dptable = new uint32_t[max_slices + 1];
     std::fill(dptable, dptable + max_slices + 1, BOT); // set all entries to BOT
     dptable[0] = 0;
-    for (uint32_t t = 0; t != num_types; ++t)
+    for (uint32_t t = 0; t != num_types and types[t] <= max_slices; ++t)
         dptable[types[t]] = 0; // set all slots that can be trivially solved by a single pizza type
 
 #ifdef VERBOSE
@@ -109,7 +104,7 @@ int main(int argc, const char **argv)
     uint32_t next_milestone = milestone;
 
     /* Solve the dynamic programming table. */
-    for (uint32_t i = 1; i <= max_slices; ++i) {
+    for (uint32_t i = types[0]; i <= max_slices; ++i) {
         if (i == next_milestone) {
             std::cerr << (next_milestone * 100.f) / max_slices << "%\n";
             next_milestone += milestone;
@@ -118,15 +113,14 @@ int main(int argc, const char **argv)
         std::cerr << "Solve for " << i << " slices.\n";
 #endif
         for (uint32_t t = num_types; t --> 0;) {
-            RESET_COUNTERS();
             uint32_t size_of_type = types[t];
             if (size_of_type > i) continue;            // pizza type is larger than required slices
-            if (counters[size_of_type] == 0) continue; // pizza type not available
-            uint32_t left = size_of_type;
-            uint32_t right = i - left;
-            if (solve(dptable, counters, left) and solve(dptable, counters, right)) {
-                /* Left + right form a valid solution. */
-                dptable[i] = right;
+            RESET_COUNTERS();
+            assert(counters[size_of_type] > 0);
+            --counters[size_of_type];
+            uint32_t prev = i - size_of_type;
+            if (solve(dptable, counters, prev)) {
+                dptable[i] = prev;
                 break;
             }
         }
@@ -143,9 +137,7 @@ int main(int argc, const char **argv)
 
     uint32_t solution = max_slices;
     while (dptable[solution] == BOT) --solution;
-#ifdef VERBOSE
     std::cerr << "Solution of " << solution << " slices found!\n";
-#endif
 
     std::vector<uint32_t> pizzas;
     RESET_COUNTERS();
