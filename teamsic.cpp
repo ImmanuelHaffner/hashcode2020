@@ -8,9 +8,6 @@
 #include <vector>
 
 
-//#define VERBOSE
-
-
 constexpr uint32_t BOT = std::numeric_limits<uint32_t>::max();
 
 
@@ -47,9 +44,6 @@ int main(int argc, const char **argv)
     /* Read problem description: maximum number of pizza slices and number of pizza types. */
     uint32_t max_slices, num_types;
     in >> max_slices >> num_types;
-#ifdef VERBOSE
-    std::cerr << "Maximum " << max_slices << " slices with " << num_types << " types.\n";
-#endif
 
     /* Allocate array for pizza types. */
     uint32_t *types = new uint32_t[num_types];
