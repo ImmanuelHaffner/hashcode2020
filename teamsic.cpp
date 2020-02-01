@@ -57,28 +57,12 @@ int main(int argc, const char **argv)
     /* Read pizza types. */
     for (uint32_t i = 0; i != num_types; ++i)
         in >> types[i];
-#ifdef VERBOSE
-    std::cerr << "Pizza types: [";
-    for (uint32_t i = 0; i != num_types; ++i) {
-        if (i) std::cerr << ", ";
-        std::cerr << i << ": " << types[i];
-    }
-    std::cerr << "]\n";
-#endif
 
     /* Allocate and initialize table of type counters. */
     const uint32_t biggest_size = types[num_types-1];
     uint32_t *counters_original = new uint32_t[biggest_size + 1]();
     for (uint32_t t = 0; t != num_types; ++t)
         ++counters_original[types[t]];
-#ifdef VERBOSE
-    std::cerr << "counters: [";
-    for (uint32_t c = 0; c <= biggest_size; ++c) {
-        if (c) std::cerr << ", ";
-        std::cerr << counters_original[c];
-    }
-    std::cerr << "]\n";
-#endif
 
     /* Create a working copy of counters and define a function to reset them to the original state. */
     uint32_t *counters = new uint32_t[biggest_size + 1];
@@ -91,15 +75,6 @@ int main(int argc, const char **argv)
     for (uint32_t t = 0; t != num_types and types[t] <= max_slices; ++t)
         dptable[types[t]] = 0; // set all slots that can be trivially solved by a single pizza type
 
-#ifdef VERBOSE
-    std::cerr << "DP table: [";
-    for (uint32_t i = 0; i != max_slices + 1; ++i) {
-        if (i) std::cerr << ", ";
-        std::cerr << i << ": " << dptable[i];
-    }
-    std::cerr << "]\n";
-#endif
-
     const uint32_t milestone = max_slices / 100; // report every 1% progress
     uint32_t next_milestone = milestone;
 
@@ -109,9 +84,6 @@ int main(int argc, const char **argv)
             std::cerr << (next_milestone * 100.f) / max_slices << "%\n";
             next_milestone += milestone;
         }
-#ifdef VERBOSE
-        std::cerr << "Solve for " << i << " slices.\n";
-#endif
         for (uint32_t t = num_types; t --> 0;) {
             uint32_t size_of_type = types[t];
             if (size_of_type > i) continue;            // pizza type is larger than required slices
@@ -126,15 +98,6 @@ int main(int argc, const char **argv)
         }
     }
 
-#ifdef VERBOSE
-    std::cerr << "DP table: [";
-    for (uint32_t i = 0; i != max_slices + 1; ++i) {
-        if (i) std::cerr << ", ";
-        std::cerr << i << ": " << dptable[i];
-    }
-    std::cerr << "]\n";
-#endif
-
     uint32_t solution = max_slices;
     while (dptable[solution] == BOT) --solution;
     std::cerr << "Solution of " << solution << " slices found!\n";
@@ -142,17 +105,11 @@ int main(int argc, const char **argv)
     std::vector<uint32_t> pizzas;
     RESET_COUNTERS();
     while (solution) {
-        uint32_t left = dptable[solution];
-        uint32_t right = solution - left;
-        pizzas.push_back(right);
-        solution = left;
+        uint32_t prev = dptable[solution];
+        uint32_t a_pizza = solution - prev;
+        pizzas.push_back(a_pizza);
+        solution = prev;
     }
-#ifdef VERBOSE
-    std::cerr << "Use the following pizzas:";
-    for (auto p : pizzas)
-        std::cerr << ' ' << p;
-    std::cerr << '\n';
-#endif
 
     std::sort(pizzas.begin(), pizzas.end());
     uint32_t t = 0;
