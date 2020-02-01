@@ -86,7 +86,7 @@ int main(int argc, const char **argv)
         }
         for (uint32_t t = num_types; t --> 0;) {
             uint32_t size_of_type = types[t];
-            if (size_of_type > i) continue;            // pizza type is larger than required slices
+            if (size_of_type > i) continue; // pizza type is larger than required slices
             RESET_COUNTERS();
             assert(counters[size_of_type] > 0);
             --counters[size_of_type];
