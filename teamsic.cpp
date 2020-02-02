@@ -13,19 +13,30 @@ constexpr uint32_t BOT = std::numeric_limits<uint32_t>::max();
 
 bool solve(uint32_t *dptable, uint32_t *counters, uint32_t num_slices)
 {
+    std::vector<uint32_t> used_pizzas;
     assert(num_slices != BOT);
+    bool solvable = true;
     while (num_slices) {
         const uint32_t prev = dptable[num_slices];
-        if (prev == BOT) return false; // unsolvable
+        if (prev == BOT) { // unsolvable
+            solvable = false;
+            break;
+        }
 
         const uint32_t a_pizza = num_slices - prev; // must be the size of a pizza type
         assert(a_pizza != 0);
-        if (counters[a_pizza] == 0) return false; // pizza type not available anymore
+        if (counters[a_pizza] == 0) { // pizza type not available anymore
+            solvable = false;
+            break;
+        }
         --counters[a_pizza];
+        used_pizzas.push_back(a_pizza);
 
         num_slices = prev;
     }
-    return true; // num_slices == 0  =>  trivially solvable
+    for (auto p : used_pizzas)
+        ++counters[p];
+    return solvable;
 }
 
 
@@ -54,13 +65,9 @@ int main(int argc, const char **argv)
 
     /* Allocate and initialize table of type counters. */
     const uint32_t biggest_size = types[num_types-1];
-    uint32_t *counters_original = new uint32_t[biggest_size + 1]();
+    uint32_t *counters = new uint32_t[biggest_size + 1]();
     for (uint32_t t = 0; t != num_types; ++t)
-        ++counters_original[types[t]];
-
-    /* Create a working copy of counters and define a function to reset them to the original state. */
-    uint32_t *counters = new uint32_t[biggest_size + 1];
-#define RESET_COUNTERS() std::copy(counters_original, counters_original + biggest_size + 1, counters)
+        ++counters[types[t]];
 
     /* Allocate and initialize dynamic programming table. */
     uint32_t *dptable = new uint32_t[max_slices + 1];
@@ -81,14 +88,15 @@ int main(int argc, const char **argv)
         for (uint32_t t = num_types; t --> 0;) {
             uint32_t size_of_type = types[t];
             if (size_of_type > i) continue; // pizza type is larger than required slices
-            RESET_COUNTERS();
             assert(counters[size_of_type] > 0);
             --counters[size_of_type];
             uint32_t prev = i - size_of_type;
             if (solve(dptable, counters, prev)) {
+                ++counters[size_of_type];
                 dptable[i] = prev;
                 break;
             }
+            ++counters[size_of_type];
         }
     }
 
@@ -97,7 +105,6 @@ int main(int argc, const char **argv)
     std::cerr << "Solution of " << solution << " slices found!\n";
 
     std::vector<uint32_t> pizzas;
-    RESET_COUNTERS();
     while (solution) {
         uint32_t prev = dptable[solution];
         uint32_t a_pizza = solution - prev;
@@ -121,7 +128,6 @@ int main(int argc, const char **argv)
 
     /* Dispose of acquired resources. */
     delete[] counters;
-    delete[] counters_original;
     delete[] dptable;
     delete[] types;
 }
